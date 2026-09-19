@@ -106,16 +106,6 @@ The validation workload used:
 - vision disabled during performance tests
 - cold requests with `cached_tokens=0`
 
-## Important limitation
-
-After the formal paged-attention A/B had completed and the server was shut down, the
-test host later lost its `/dev/nvidia*` device nodes before a planned 32K semantic
-smoke test could run. The formal benchmark itself had completed without Xid, CUDA
-errors or a GPU reset. No causal claim is made here about that later host/driver event.
-
-Because of that unresolved host incident, this branch should remain **experimental**
-until it has seen more testing on additional SM89 systems and workloads.
-
 ## Using the branch
 
 ```sh
