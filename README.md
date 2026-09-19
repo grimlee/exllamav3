@@ -16,6 +16,9 @@ ExLlamaV3 is an inference library for running local LLMs on modern consumer GPUs
 > [!TIP]
 > **Looking for a server?** [TabbyAPI](https://github.com/theroyallab/tabbyAPI/) is the official and recommended backend server. It provides an OpenAI-compatible API for local or remote inference, HF model downloading, embedding model support, and HF Jinja2 chat templates. Its startup script manages and installs prerequisites to help you get started.
 
+> [!NOTE]
+> This fork has an experimental [SM89 / Ada optimization branch](doc/sm89_ada_optimizations.md) validated on an RTX 4060 Ti 16 GB. It adds an SM89 F16ACC layout specialization and a four-warp long-query paged-attention configuration. See the linked document for measured 16K/32K/64K results, correctness checks, scope and limitations.
+
 <p align="center">
   <img src="doc/qb_kld.png" width="640" alt="Llama 3.1 8B Instruct quantization benchmark across bits per weight">
 </p>
