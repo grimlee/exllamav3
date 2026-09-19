@@ -1817,12 +1817,16 @@ def paged_attn_triton_prefill(
         h32 = q
 
     # Tile configs by head_dim, sized for ~100 KB of smem with two pipeline stages. Blackwell
-    # prefers narrower kv tiles (measured: 167 vs 153 TFLOPS on RTX 5090 at BN 32 vs 64)
-    blackwell = torch.cuda.get_device_capability(q.device)[0] >= 10
+    # prefers narrower kv tiles (measured: 167 vs 153 TFLOPS on RTX 5090 at BN 32 vs 64).
+    # On Ada SM89, the staged/fp16 long-query path at hd_pad <= 256 was measured faster
+    # with four warps than eight. Keep the direct packed quantized-cache path unchanged.
+    capability = torch.cuda.get_device_capability(q.device)
+    blackwell = capability[0] >= 10
+    sm89 = capability[0] == 8 and capability[1] == 9
     if hd_pad <= 128:
         cfg = (128, 32, 8, 2) if blackwell else (128, 64, 8, 2)
     elif hd_pad <= 256:
-        cfg = (64, 32, 8, 2)
+        cfg = (64, 32, 4 if sm89 and qc is None and new_kv_mode != 2 else 8, 2)
     else:
         cfg = (32, 16, 4, 2)
     num_stages_forced = num_stages is not None
