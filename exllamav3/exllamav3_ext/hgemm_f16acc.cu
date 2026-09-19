@@ -488,7 +488,13 @@ static void launch_config(const at::Tensor& a, const at::Tensor& b, const at::Te
 template <bool OUT_F32>
 static void launch(const at::Tensor& a, const at::Tensor& b, const at::Tensor& c, cudaStream_t stream)
 {
-    if (!tuned_device(a.device().index())) launch_config<OUT_F32, 128, false>(a, b, c, stream);
+    const auto* props = at::cuda::getDeviceProperties(a.device().index());
+    // Ada SM89: a real-shape sweep on RTX 4060 Ti found the 128x64 tuned layout
+    // (4 warps, GROUP_M=16, PAD=0) to be the best single global configuration.
+    // Keep the existing eligibility/rate-probe logic unchanged; only specialize the
+    // layout once the F16ACC path has already been selected.
+    if (props->major == 8 && props->minor == 9) launch_config<OUT_F32, 64, true>(a, b, c, stream);
+    else if (!tuned_device(a.device().index())) launch_config<OUT_F32, 128, false>(a, b, c, stream);
     else if (narrow_tile(a, b)) launch_config<OUT_F32, 64, true>(a, b, c, stream);
     else launch_config<OUT_F32, 128, true>(a, b, c, stream);
 }
