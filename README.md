@@ -16,8 +16,38 @@ ExLlamaV3 is an inference library for running local LLMs on modern consumer GPUs
 > [!TIP]
 > **Looking for a server?** [TabbyAPI](https://github.com/theroyallab/tabbyAPI/) is the official and recommended backend server. It provides an OpenAI-compatible API for local or remote inference, HF model downloading, embedding model support, and HF Jinja2 chat templates. Its startup script manages and installs prerequisites to help you get started.
 
-> [!NOTE]
-> This fork has an experimental [SM89 / Ada optimization branch](doc/sm89_ada_optimizations.md) validated on an RTX 4060 Ti 16 GB. It adds an SM89 F16ACC layout specialization and a four-warp long-query paged-attention configuration. See the linked document for measured 16K/32K/64K results, correctness checks, scope and limitations.
+## Experimental SM89 / Ada optimizations
+
+This fork includes two **SM89-only** performance specializations validated on an
+**RTX 4060 Ti 16 GB** with Qwen3.8-27B EXL3 3.0 bpw:
+
+- F16ACC GEMM: tuned `128x64x64` layout, 4 warps, `GROUP_M=16`, `PAD=0`
+- Long-query paged attention: `BM64 / BN32 / W4 / S2`
+
+### Measured server results
+
+**F16ACC only, 32K cold prefill**
+
+| Control | SM89 F16ACC | Uplift |
+|---:|---:|---:|
+| 652.37 tok/s | 679.31 tok/s | **+4.129%** |
+
+Additional F16ACC uplift: **+4.71% at 16K**, **+3.52% at 64K**.
+
+**Paged-attention A/B with F16ACC enabled in both arms**
+
+| Context | Control | SM89 attention | Uplift |
+|---:|---:|---:|---:|
+| 16K | 763.530 tok/s | 787.156 tok/s | **+3.094%** |
+| 32K | 680.912 tok/s | 723.184 tok/s | **+6.208%** |
+| 64K | 555.397 tok/s | 613.711 tok/s | **+10.500%** |
+
+Correctness checks for the tested paths produced `max_abs=0`, with no measured VRAM
+increase or formal-run CUDA/Xid/server failures.
+
+See **[SM89 / Ada optimization details](doc/sm89_ada_optimizations.md)** for methodology,
+test configuration, scope and limitations.
+
 
 <p align="center">
   <img src="doc/qb_kld.png" width="640" alt="Llama 3.1 8B Instruct quantization benchmark across bits per weight">
